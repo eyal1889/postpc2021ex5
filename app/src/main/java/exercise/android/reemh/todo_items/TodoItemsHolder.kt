@@ -14,10 +14,10 @@ interface TodoItemsHolder {
     fun addNewInProgressItem(description: String?)
 
     /** mark the @param item as DONE  */
-    fun markItemDone(item: TodoItem?)
+    fun markItemDone(item: TodoItem?,position: Int):Int
 
     /** mark the @param item as IN-PROGRESS  */
-    fun markItemInProgress(item: TodoItem?)
+    fun markItemInProgress(item: TodoItem?,position: Int):Int
 
     /** delete the @param item  */
     fun deleteItem(item: TodoItem?)
@@ -41,4 +41,9 @@ interface TodoItemsHolder {
      * @param prevState the state to load
      */
     fun loadState(prevState: Serializable?)
+    fun saveInSp()
+
+    fun reorder_Marked_Done(position: Int):Int
+
+    fun reorder_Marked_Progress(position: Int):Int
 }

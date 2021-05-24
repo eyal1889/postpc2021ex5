@@ -1,5 +1,10 @@
 package exercise.android.reemh.todo_items
 
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.graphics.Paint
 import android.os.Bundle
 import android.view.View
 import android.widget.EditText
@@ -9,13 +14,17 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 
 class MainActivity : AppCompatActivity() {
+    private var broadcastReceiverForDbChanged: BroadcastReceiver? = null
+    private var broadcastReceiverForCheckedEdit: BroadcastReceiver? = null
+
+
     @JvmField
     var holder: TodoItemsHolder? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         if (holder == null) {
-            holder = TodoItemsHolderImpl()
+            holder = TodoApp.getInstance().holder
         }
         val adapter = TodoAdapter(holder!!)
         val todo_recycler: RecyclerView = findViewById(R.id.recyclerTodoItemsList)
@@ -35,51 +44,114 @@ class MainActivity : AppCompatActivity() {
             adapter.notifyItemInserted(0)
             editTextUserInput.setText("")
         }
-        adapter.onCheckBoxCallback = { todoItem: TodoItem, position: Int ->
-            val status = todoItem.getStatus()
+        adapter.onCheckBoxCallback = { position: Int ->
+            val todoItem = holder!!.getCurrentItems()?.get(position)
+            val status = todoItem?.getStatus()
             if (status == true) {
-                holder!!.markItemInProgress(todoItem)
-                reorder_Marked_Progress(holder!!.getCurrentItems(), adapter, position)
+                val new_pos = holder!!.markItemInProgress(todoItem,position)
+                //reorder_Marked_Progress(holder!!.getCurrentItems(), adapter, position)
+                adapter.notifyItemMoved(position,new_pos)
+                println("###"+position+"###"+new_pos)
             } else {
-                holder!!.markItemDone(todoItem)
-                reorder_Marked_Done(holder!!.getCurrentItems(), adapter, position)
+                val new_pos = holder!!.markItemDone(todoItem,position)
+                adapter.notifyItemMoved(position,new_pos)
+                //reorder_Marked_Done(holder!!.getCurrentItems(), adapter, position)
+                println("###"+position+"###"+new_pos)
             }
-
         }
-        adapter.onDelCallback = { todoItem: TodoItem, position: Int ->
+        adapter.onDelCallback = {position: Int ->
+            val todoItem = holder!!.getCurrentItems()?.get(position)
             holder!!.deleteItem(todoItem)
             adapter.notifyItemRemoved(position)
+            println(position)
+            println(holder!!.getCurrentItems()?.size)
+            println("itemToDel: "+ todoItem?.getDescription())
+            println("$$$"+adapter.itemCount+"$$$")
         }
-    }
-
-    fun reorder_Marked_Done(lst: ArrayList<TodoItem?>?, adapter: TodoAdapter, position: Int) {
-        var new_pos = position
-        if (lst != null) {
-            for (i in position until lst.size - 1) {
-                if (lst.get(i + 1)?.getStatus()!!) {
-                    break
+        adapter.onItemClickCallBack = {position: Int ->
+            val todoItem = holder!!.getCurrentItems()?.get(position)
+            val intentToOpenService = Intent(this@MainActivity, EditTodo::class.java)
+            intentToOpenService.putExtra("description",todoItem?.getDescription())
+            intentToOpenService.putExtra("creation_date",todoItem?.getCreation())
+            intentToOpenService.putExtra("last_modified",todoItem?.getLastModified())
+            intentToOpenService.putExtra("status",todoItem?.getStatus())
+            intentToOpenService.putExtra("pos",position)
+            startActivity(intentToOpenService)
+        }
+        /*
+    was a todo
+     */broadcastReceiverForDbChanged = object : BroadcastReceiver() {
+            override fun onReceive(context: Context, incomingIntent: Intent) {
+                if (incomingIntent.action != "db_changed") return
+                val new_desc = incomingIntent.getStringExtra("new_desc")
+                val pos = incomingIntent.getIntExtra("pos",0)
+                if (new_desc != null) {
+                    holder!!.getCurrentItems()?.get(pos)?.setDescription(new_desc)
+                    holder!!.getCurrentItems()?.get(pos)?.setLastModified()
+                    adapter.notifyItemChanged(pos)
                 }
-                new_pos++
-                val temp = lst.get(i)
-                lst.set(i, lst.get(i + 1))
-                lst.set(i + 1, temp)
             }
         }
-        adapter.notifyItemMoved(position, new_pos)
+        broadcastReceiverForCheckedEdit = object : BroadcastReceiver() {
+            override fun onReceive(context: Context, incomingIntent: Intent) {
+                if (incomingIntent.action != "checkbox_in_edit") return
+                val status = incomingIntent.getBooleanExtra("check_status",false)
+                val pos = incomingIntent.getIntExtra("pos",0)
+                    holder!!.getCurrentItems()?.get(pos)?.setLastModified()
+                    adapter.notifyItemChanged(pos)
+                val todoItem = holder!!.getCurrentItems()?.get(pos)
+                if (status != true) {
+                    val new_pos= holder!!.markItemInProgress(todoItem,pos)
+                    //reorder_Marked_Progress(holder!!.getCurrentItems(), adapter, new_pos)
+                    adapter.notifyItemMoved(pos,new_pos)
+                } else {
+                    val new_pos = holder!!.markItemDone(todoItem,pos)
+                    //reorder_Marked_Done(holder!!.getCurrentItems(), adapter, pos)
+                    adapter.notifyItemMoved(pos,new_pos)
+                }
+
+                }
+            }
+
+        registerReceiver(broadcastReceiverForDbChanged, IntentFilter("db_changed"))
+        registerReceiver(broadcastReceiverForCheckedEdit, IntentFilter("checkbox_in_edit"))
     }
-    fun reorder_Marked_Progress(lst: ArrayList<TodoItem?>?, adapter: TodoAdapter, position: Int) {
-        if (lst!!.size == 0){
-            return
-        }
-        var temp= lst[0]
-        lst[0] = lst[position]
-        for (i in 1 until lst.size) {
-            val temp1= lst.get(i)
-            lst.set(i, temp)
-            temp = temp1
-        }
-        adapter.notifyItemMoved(position, 0)
+
+    override fun onDestroy() {
+        super.onDestroy()
+        holder!!.saveInSp()
+        unregisterReceiver(broadcastReceiverForDbChanged)
+
     }
+
+//    fun reorder_Marked_Done(lst: ArrayList<TodoItem?>?, adapter: TodoAdapter, position: Int) {
+//        var new_pos = position
+//        if (lst != null) {
+//            for (i in position until lst.size - 1) {
+//                if (lst.get(i + 1)?.getStatus()!!) {
+//                    break
+//                }
+//                new_pos++
+//                val temp = lst.get(i)
+//                lst.set(i, lst.get(i + 1))
+//                lst.set(i + 1, temp)
+//            }
+//        }
+//        adapter.notifyItemMoved(position, new_pos)
+//    }
+//    fun reorder_Marked_Progress(lst: ArrayList<TodoItem?>?, adapter: TodoAdapter, position: Int) {
+//        if (lst!!.size == 0){
+//            return
+//        }
+//        var temp= lst[0]
+//        lst[0] = lst[position]
+//        for (i in 1 until lst.size) {
+//            val temp1= lst.get(i)
+//            lst.set(i, temp)
+//            temp = temp1
+//        }
+//        adapter.notifyItemMoved(position, 0)
+//    }
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
@@ -94,43 +166,4 @@ class MainActivity : AppCompatActivity() {
         holder!!.loadState(prevState)
     }
 }
-/*
 
-SPECS:
-
-- the screen starts out empty (no items shown, edit-text input should be empty)
-- every time the user taps the "add TODO item" button:
-    * if the edit-text is empty (no input), nothing happens
-    * if there is input:
-        - a new TodoItem (checkbox not checked) will be created and added to the items list
-        - the new TodoItem will be shown as the first item in the Recycler view
-        - the edit-text input will be erased
-        todo:
-- the "TodoItems" list is shown in the screen
-  * every operation that creates/edits/deletes a TodoItem should immediately be shown in the UI
-  * the order of the TodoItems in the UI is:
-    - all IN-PROGRESS items are shown first. items are sorted by creation time,
-      where the last-created item is the first item in the list
-    - all DONE items are shown afterwards, no particular sort is needed (but try to think about what's the best UX for the user)
-  * every item shows a checkbox and a description. you can decide to show other data as well (creation time, etc)
-  * DONE items should show the checkbox as checked, and the description with a strike-through text
-  * IN-PROGRESS items should show the checkbox as not checked, and the description text normal
-  * upon click on the checkbox, flip the TodoItem's state (if was DONE will be IN-PROGRESS, and vice versa)
-  * add a functionality to remove a TodoItem. either by a button, long-click or any other UX as you want
-- when a screen rotation happens (user flips the screen):
-  * the UI should still show the same list of TodoItems
-  * the edit-text should store the same user-input (don't erase input upon screen change)
-
-Remarks:
-- you should use the `holder` field of the activity
-- you will need to create a class extending from RecyclerView.Adapter and use it in this activity
-- notice that you have the "row_todo_item.xml" file and you can use it in the adapter
-- you should add tests to make sure your activity works as expected. take a look at file `MainActivityTest.java`
-
-
-
-(optional, for advanced students:
-- save the TodoItems list to file, so the list will still be in the same state even when app is killed and re-launched
-)
-
-*/

@@ -6,8 +6,9 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 
 class TodoAdapter(var itemsHolder: TodoItemsHolder) : RecyclerView.Adapter<TodoHolder>() {
-    public var onCheckBoxCallback: ((TodoItem,Int) -> Unit)? = null
-    public var onDelCallback: ((TodoItem,Int) -> Unit)? = null
+    public var onCheckBoxCallback: ((Int) -> Unit)? = null
+    public var onDelCallback: ((Int) -> Unit)? = null
+    public var onItemClickCallBack: ((Int) -> Unit)? = null
 
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TodoHolder {
@@ -30,10 +31,16 @@ class TodoAdapter(var itemsHolder: TodoItemsHolder) : RecyclerView.Adapter<TodoH
         if (todoItem != null) {
             holder.status.setChecked(todoItem.getStatus())
         }
+        if (holder.status.isChecked()){
+            holder.description.paintFlags = holder.description.getPaintFlags() or Paint.STRIKE_THRU_TEXT_FLAG
+        }
+        else if(!holder.status.isChecked()){
+            holder.description.paintFlags = holder.description.getPaintFlags() and Paint.LINEAR_TEXT_FLAG
+        }
         holder.status.setOnClickListener {
             val callback = onCheckBoxCallback ?: return@setOnClickListener
             if (todoItem != null) {
-                callback(todoItem,holder.adapterPosition)
+                callback(holder.adapterPosition)
             }
             if (holder.status.isChecked()){
                 holder.description.paintFlags = holder.description.getPaintFlags() or Paint.STRIKE_THRU_TEXT_FLAG
@@ -47,7 +54,13 @@ class TodoAdapter(var itemsHolder: TodoItemsHolder) : RecyclerView.Adapter<TodoH
             val callback = onDelCallback ?: return@setOnClickListener
             if (todoItem != null) {
                 print("in delete: "+position+"\n")
-                callback(todoItem,holder.adapterPosition)
+                callback(holder.adapterPosition)
+            }
+        }
+        holder.itemView.setOnClickListener {
+            val callback = onItemClickCallBack ?: return@setOnClickListener
+            if (todoItem != null) {
+                callback(holder.adapterPosition)
             }
         }
 
