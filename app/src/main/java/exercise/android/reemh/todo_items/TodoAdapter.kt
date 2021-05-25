@@ -63,6 +63,5 @@ class TodoAdapter(var itemsHolder: TodoItemsHolder) : RecyclerView.Adapter<TodoH
                 callback(holder.adapterPosition)
             }
         }
-
     }
 }

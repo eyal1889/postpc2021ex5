@@ -1,7 +1,9 @@
 package exercise.android.reemh.todo_items;
 import android.app.AppComponentFactory;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -17,6 +19,7 @@ public class EditTodo  extends AppCompatActivity {
     EditText description_right;
     int pos;
     Context context = this;
+    private BroadcastReceiver broadcastReceiverForCheckBox = null;
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_edit_todo);
@@ -61,13 +64,22 @@ public class EditTodo  extends AppCompatActivity {
 
         description_right.addTextChangedListener(textWatcher);
 
+        broadcastReceiverForCheckBox = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent incomingIntent) {
+                if (incomingIntent == null || !incomingIntent.getAction().equals("status_changed")) return;
+                pos = incomingIntent.getIntExtra("new_pos",0);
+            }
+        };
+        registerReceiver(broadcastReceiverForCheckBox, new IntentFilter("status_changed"));
+
         status_right.setOnClickListener(v -> {
             Intent bd = new Intent("checkbox_in_edit");
             bd.putExtra("check_status",status_right.isChecked());
             bd.putExtra("pos",pos);
             context.sendBroadcast(bd);
         });
-
+//todo change pos when status changed!
     }
     private final TextWatcher textWatcher = new TextWatcher() {
 
@@ -85,7 +97,12 @@ public class EditTodo  extends AppCompatActivity {
 
         public void onTextChanged(CharSequence s, int start, int before,
                                   int count) {
-
         }
     };
+
+    protected void onDestroy() {
+        super.onDestroy();
+        unregisterReceiver(broadcastReceiverForCheckBox);
+
+    }
 }

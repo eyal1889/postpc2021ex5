@@ -103,7 +103,7 @@ public class MainActivityTest extends TestCase {
     ArrayList<TodoItem> itemsReturnedByHolder = new ArrayList<>();
     Mockito.when(mockHolder.getCurrentItems())
       .thenReturn(itemsReturnedByHolder);
-    TodoItem itemInProgress = new TodoItem("do homework",false);
+    TodoItem itemInProgress = new TodoItem("do homework",false,"11","11");
     itemsReturnedByHolder.add(itemInProgress);
 
     // test - let the activity think it is being shown
@@ -136,7 +136,7 @@ public class MainActivityTest extends TestCase {
     ArrayList<TodoItem> itemsReturnedByHolder = new ArrayList<>();
     Mockito.when(mockHolder.getCurrentItems())
       .thenReturn(itemsReturnedByHolder);
-    TodoItem itemDone = new TodoItem("buy tomatoes",true);
+    TodoItem itemDone = new TodoItem("buy tomatoes",true,"22","22");
     itemsReturnedByHolder.add(itemDone);
 
     // test - let the activity think it is being shown

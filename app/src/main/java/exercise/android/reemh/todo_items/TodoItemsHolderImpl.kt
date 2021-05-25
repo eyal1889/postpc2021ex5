@@ -27,7 +27,9 @@ class TodoItemsHolderImpl: TodoItemsHolder {
     }
 
     override fun getCurrentItems(): ArrayList<TodoItem?> {
-        return todos
+        val copy_arr = ArrayList<TodoItem?>()
+        copy_arr.addAll(todos)
+        return copy_arr
     }
     override fun addNewInProgressItem(description: String?) {
         val formatter:SimpleDateFormat= SimpleDateFormat("yyyy-MM-dd 'at' HH:mm:ss z");

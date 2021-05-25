@@ -104,10 +104,16 @@ class MainActivity : AppCompatActivity() {
                     val new_pos= holder!!.markItemInProgress(todoItem,pos)
                     //reorder_Marked_Progress(holder!!.getCurrentItems(), adapter, new_pos)
                     adapter.notifyItemMoved(pos,new_pos)
+                    val bc =Intent("status_changed")
+                    bc.putExtra("new_pos",new_pos)
+                    sendBroadcast(bc)
                 } else {
                     val new_pos = holder!!.markItemDone(todoItem,pos)
                     //reorder_Marked_Done(holder!!.getCurrentItems(), adapter, pos)
                     adapter.notifyItemMoved(pos,new_pos)
+                    val bc =Intent("status_changed")
+                    bc.putExtra("new_pos",new_pos)
+                    sendBroadcast(bc)
                 }
 
                 }
