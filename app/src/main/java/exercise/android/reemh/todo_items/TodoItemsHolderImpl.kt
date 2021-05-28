@@ -40,6 +40,7 @@ class TodoItemsHolderImpl: TodoItemsHolder {
         val d:String = formatter.format(date)
         val item = TodoItem(description!!, false,d,d)
         todos.add(0,item);
+        saveInSp()
     }
     override fun markItemDone(item: TodoItem?,position: Int): Int {
         item!!.setStatus(true)
@@ -54,13 +55,14 @@ class TodoItemsHolderImpl: TodoItemsHolder {
     override fun deleteItem(item: TodoItem?) {
         //size-=1
         todos.remove(item)
+        saveInSp()
     }
 
 //    override fun getSize():Int {
 //        return size
 //    }
 
-    override fun saveState(): Serializable? {
+    override fun saveState(): Serializable {
         val state = CalculatorState()
         state.todos.addAll(todos)
         //state.size = size
@@ -106,6 +108,7 @@ class TodoItemsHolderImpl: TodoItemsHolder {
                 todos.set(i, todos.get(i + 1))
                 todos.set(i + 1, temp)
         }
+        saveInSp()
         return new_pos
     }
     override fun reorder_Marked_Progress(position: Int):Int {
@@ -115,6 +118,7 @@ class TodoItemsHolderImpl: TodoItemsHolder {
         val temp = todos.get(position)
         todos.removeAt(position)
         todos.add(0,temp)
+        saveInSp()
         return 0
 //        var temp= todos[0]
 //        todos[0] = todos[position]
