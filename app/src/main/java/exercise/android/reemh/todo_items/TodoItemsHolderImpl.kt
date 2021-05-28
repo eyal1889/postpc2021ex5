@@ -7,6 +7,8 @@ import java.io.Serializable
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.collections.ArrayList
+import java.util.Date;
+
 
 // TODO: implement!
 class TodoItemsHolderImpl: TodoItemsHolder {
@@ -32,12 +34,12 @@ class TodoItemsHolderImpl: TodoItemsHolder {
         return copy_arr
     }
     override fun addNewInProgressItem(description: String?) {
-        val formatter:SimpleDateFormat= SimpleDateFormat("yyyy-MM-dd 'at' HH:mm:ss z");
-        val date:Date = Date(System.currentTimeMillis());
-        println(date.time)
+        val formatter= SimpleDateFormat("yyyy-MM-dd 'at' HH:mm:ss .SSS");
+        val date = Date(System.currentTimeMillis());
+        //println(date.time)
         val d:String = formatter.format(date)
         val item = TodoItem(description!!, false,d,d)
-        todos.add(0,item)
+        todos.add(0,item);
     }
     override fun markItemDone(item: TodoItem?,position: Int): Int {
         item!!.setStatus(true)
